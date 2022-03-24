@@ -46,6 +46,7 @@ class FrmFormActionsController {
 			'register'  => 'FrmDefRegAction',
 			'paypal'    => 'FrmDefPayPalAction',
 			'payment'   => 'FrmDefHrsAction',
+			'quiz'      => 'FrmDefQuizAction',
 			'mailchimp' => 'FrmDefMlcmpAction',
 			'api'       => 'FrmDefApiAction',
 
@@ -134,6 +135,7 @@ class FrmFormActionsController {
 					'email',
 					'wppost',
 					'register',
+					'quiz',
 					'twilio',
 				),
 			),
@@ -204,7 +206,7 @@ class FrmFormActionsController {
 		/* translators: %s: Name of form action */
 		$upgrade_label = sprintf( esc_html__( '%s form actions', 'formidable' ), $action_control->action_options['tooltip'] );
 
-		$default_shown    = array( 'wppost', 'register', 'paypal', 'payment', 'hubspot' );
+		$default_shown    = array( 'wppost', 'register', 'payment', 'quiz', 'hubspot' );
 		$default_shown    = array_values( array_diff( $default_shown, $allowed ) );
 		$default_position = array_search( $action_control->id_base, $default_shown );
 		$allowed_count    = count( $allowed );
@@ -393,11 +395,16 @@ class FrmFormActionsController {
 		return $form;
 	}
 
+	/**
+	 * @param int $form_id
+	 * @return void
+	 */
 	public static function update_settings( $form_id ) {
 		FrmAppHelper::permission_check( 'frm_edit_forms' );
 		$process_form = FrmAppHelper::get_post_param( 'process_form', '', 'sanitize_text_field' );
 		if ( ! wp_verify_nonce( $process_form, 'process_form_nonce' ) ) {
-			wp_die( esc_html__( 'You do not have permission to do that', 'formidable' ) );
+			$frm_settings = FrmAppHelper::get_settings();
+			wp_die( esc_html( $frm_settings->admin_permission ) );
 		}
 
 		global $wpdb;

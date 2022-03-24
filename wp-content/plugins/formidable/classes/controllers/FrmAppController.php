@@ -459,9 +459,10 @@ class FrmAppController {
 			$dependecies[] = 'wp-color-picker';
 		}
 
+		self::register_popper1();
 		wp_register_script( 'formidable_admin', FrmAppHelper::plugin_url() . '/js/formidable_admin.js', $dependecies, $version, true );
 		wp_register_style( 'formidable-admin', FrmAppHelper::plugin_url() . '/css/frm_admin.css', array(), $version );
-		wp_register_script( 'bootstrap_tooltip', FrmAppHelper::plugin_url() . '/js/bootstrap.min.js', array( 'jquery' ), '3.4.1' );
+		wp_register_script( 'bootstrap_tooltip', FrmAppHelper::plugin_url() . '/js/bootstrap.min.js', array( 'jquery', 'popper' ), '4.6.1', true );
 		wp_register_style( 'formidable-grids', FrmAppHelper::plugin_url() . '/css/frm_grids.css', array(), $version );
 
 		if ( 'formidable' === FrmAppHelper::simple_get( 'page', 'sanitize_title' ) ) {
@@ -473,9 +474,7 @@ class FrmAppController {
 			}
 		}
 
-		// load multselect js
-		$depends_on = array( 'jquery', 'bootstrap_tooltip' );
-		wp_register_script( 'bootstrap-multiselect', FrmAppHelper::plugin_url() . '/js/bootstrap-multiselect.js', $depends_on, '1.1.1', true );
+		wp_register_script( 'bootstrap-multiselect', FrmAppHelper::plugin_url() . '/js/bootstrap-multiselect.js', array( 'jquery', 'bootstrap_tooltip', 'popper' ), '1.1.1', true );
 
 		$page      = FrmAppHelper::simple_get( 'page', 'sanitize_title' );
 		$post_type = FrmAppHelper::simple_get( 'post_type', 'sanitize_title' );
@@ -485,6 +484,7 @@ class FrmAppController {
 
 			wp_enqueue_script( 'admin-widgets' );
 			wp_enqueue_style( 'widgets' );
+			self::maybe_deregister_popper2();
 			wp_enqueue_script( 'formidable_admin' );
 			FrmAppHelper::localize_script( 'admin' );
 
@@ -520,6 +520,7 @@ class FrmAppController {
 			if ( $post_type === 'frm_display' ) {
 				wp_enqueue_style( 'formidable-grids' );
 				wp_enqueue_script( 'jquery-ui-draggable' );
+				self::maybe_deregister_popper2();
 				wp_enqueue_script( 'formidable_admin' );
 				wp_enqueue_style( 'formidable-admin' );
 				FrmAppHelper::localize_script( 'admin' );
@@ -528,6 +529,38 @@ class FrmAppController {
 		}
 
 		self::maybe_force_formidable_block_on_gutenberg_page();
+	}
+
+	/**
+	 * Fix a Duplicator Pro conflict because it uses Popper 2. See issue #3459.
+	 *
+	 * @since 5.2.02.01
+	 *
+	 * @return void
+	 */
+	private static function maybe_deregister_popper2() {
+		global $wp_scripts;
+
+		if ( ! array_key_exists( 'popper', $wp_scripts->registered ) ) {
+			return;
+		}
+
+		$popper = $wp_scripts->registered['popper'];
+		if ( version_compare( $popper->ver, '2.0', '>=' ) ) {
+			wp_deregister_script( 'popper' );
+			self::register_popper1();
+		}
+	}
+
+	/**
+	 * Register Popper required for Bootstrap 4.
+	 *
+	 * @since 5.2.02.01
+	 *
+	 * @return void
+	 */
+	private static function register_popper1() {
+		wp_register_script( 'popper', FrmAppHelper::plugin_url() . '/js/popper.min.js', array( 'jquery' ), '1.16.0', true );
 	}
 
 	/**
